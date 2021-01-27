@@ -20,10 +20,7 @@ class FakeDetector:
         self.load_train_data()
         self.train_dataset = pd.concat([self.real_train_dataset, self.fake_train_dataset])
 
-        print(self.train_dataset.head(5))
-        print(self.train_dataset.tail(5))
-
-        # fe(self.real_train_dataset, self.fake_train_dataset)
+        fe(self.train_dataset)
 
 
 
