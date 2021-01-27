@@ -7,6 +7,7 @@ def main():
     ## TODO: rewrite with os path
 
     settings = {
+        "stemmer": "porter",
         "real_file_path": "Resources/Real.json",
         "fake_file_path": "Resources/Fake.json",
         "real_dataset_path": "Dataset/Real.json",

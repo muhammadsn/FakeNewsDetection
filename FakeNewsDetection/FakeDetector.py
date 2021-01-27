@@ -31,9 +31,9 @@ class FakeDetector:
 
         rl = []
         for idx, row in rt.iterrows():
-            text_tokens = tp(row['text'])
-            title_tokens = tp(row['title'])
-            description_tokens = tp(row['description'])
+            text_tokens = tp(row['text'], self.settings["stemmer"])
+            title_tokens = tp(row['title'], self.settings["stemmer"])
+            description_tokens = tp(row['description'], self.settings["stemmer"])
             d = {"file": row["file"], "text": text_tokens.get_words(), "title": title_tokens.get_words(), "description": description_tokens.get_words()}
             rl.append(d)
         real_train = pd.DataFrame(rl)
@@ -41,9 +41,9 @@ class FakeDetector:
 
         fl = []
         for idx, row in ft.iterrows():
-            text_tokens = tp(row['text'])
-            title_tokens = tp(row['title'])
-            description_tokens = tp(row['description'])
+            text_tokens = tp(row['text'], self.settings["stemmer"])
+            title_tokens = tp(row['title'], self.settings["stemmer"])
+            description_tokens = tp(row['description'], self.settings["stemmer"])
             d = {"file": row["file"], "text": text_tokens.get_words(), "title": title_tokens.get_words(), "description": description_tokens.get_words()}
             fl.append(d)
         fake_train = pd.DataFrame(fl)
