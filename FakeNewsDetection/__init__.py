@@ -1,2 +1,2 @@
-from .textProcessor import *
-from .fileHandler import *
+from .TextProcessor import *
+from .FileHandler import *

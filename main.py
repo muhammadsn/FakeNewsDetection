@@ -1,5 +1,5 @@
-from FakeNewsDetection.fileHandler import Exporter as save
-from FakeNewsDetection.fileHandler import Importer as load
+from FakeNewsDetection.FileHandler import Exporter as save
+from FakeNewsDetection.FileHandler import Importer as load
 from FakeNewsDetection.FakeDetector import FakeDetector as fd
 
 def main():

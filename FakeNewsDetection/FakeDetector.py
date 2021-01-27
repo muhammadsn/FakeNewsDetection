@@ -1,7 +1,8 @@
 import pandas as pd
-from .textProcessor import TextProcessor as tp
-from .fileHandler import Importer as load
-from .fileHandler import Exporter as save
+from .TextProcessor import TextProcessor as tp
+from .FeatureExtractor import FeatureExtractor as fe
+from .FileHandler import Importer as load
+from .FileHandler import Exporter as save
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
@@ -18,6 +19,7 @@ class FakeDetector:
         self.load_train_data()
 
         print(self.real_train_dataset.head(5))
+
 
 
     def load_train_data(self):
