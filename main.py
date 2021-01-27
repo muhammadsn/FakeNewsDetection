@@ -10,8 +10,8 @@ def main():
         "stemmer": "porter",
         "real_file_path": "Resources/Real.json",
         "fake_file_path": "Resources/Fake.json",
-        "real_dataset_path": "Dataset/Real.json",
-        "fake_dataset_path": "Dataset/Fake.json",
+        "real_dataset_path": "Resources/Dataset/Real.json",
+        "fake_dataset_path": "Resources/Dataset/Fake.json",
     }
 
     A = fd(settings)
