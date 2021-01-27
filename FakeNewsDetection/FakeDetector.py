@@ -13,12 +13,17 @@ class FakeDetector:
 
     real_train_dataset = pd.DataFrame()
     fake_train_dataset = pd.DataFrame()
+    train_dataset = pd.DataFrame()
 
     def __init__(self, settings):
         self.settings = settings
         self.load_train_data()
+        self.train_dataset = pd.concat([self.real_train_dataset, self.fake_train_dataset])
 
-        print(self.real_train_dataset.head(5))
+        print(self.train_dataset.head(5))
+        print(self.train_dataset.tail(5))
+
+        # fe(self.real_train_dataset, self.fake_train_dataset)
 
 
 
@@ -28,6 +33,7 @@ class FakeDetector:
 
         if self.real_train_dataset.get_status():
             self.real_train_dataset = self.real_train_dataset.get_data()
+            self.real_train_dataset['class'] = 1
         else:
             rt = load("json", self.settings["real_file_path"])
             if rt.get_status():
@@ -51,6 +57,7 @@ class FakeDetector:
 
         if self.fake_train_dataset.get_status():
             self.fake_train_dataset = self.fake_train_dataset.get_data()
+            self.fake_train_dataset['class'] = 0
         else:
             ft = load("json", self.settings["fake_file_path"])
 
