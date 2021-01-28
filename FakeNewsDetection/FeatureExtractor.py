@@ -71,17 +71,18 @@ class FeatureExtractor:
             term_freq = [FreqDist(collection_words[0]), FreqDist(collection_words[1])]
             all_term_freq = FreqDist(self.all_words)
             total_word_count = sum(all_term_freq.values())
-            N = len(collections[0]) + len(collections[1])
+            # N = len(collections[0]) + len(collections[1])
             M = [0, 0]
-            pci = [len(collections[0])/N, len(collections[1])/N]
+            # pci = [len(collections[0])/N, len(collections[1])/N]
+            pci = [sum(term_freq[0].values()) / total_word_count, sum(term_freq[1].values()) / total_word_count]
             for word in self.vocabulary:
                 pi_w = [0, 0]
                 p_w = all_term_freq[word] / total_word_count
                 for cat in [0, 1]:
                     pi_w[cat] = term_freq[cat][word]/sum(term_freq[cat].values())
-                    print(cat, word, pci[cat], p_w)
                     M[cat] = np.log(pi_w[cat]/(pci[cat] * p_w))
-                score_list.append({"word": word, "score": np.max(M)})
+                # score_list.append({"word": word, "score": np.max(M)})
+                score_list.append({"word": word, "score": (pci[0] * p_w * M[0]) + (pci[1] * p_w * M[1])})
 
             df = pd.DataFrame(score_list, columns=["word", "score"])
             self.feature_scores = df
@@ -116,15 +117,16 @@ class FeatureExtractor:
             save(self.tf, "json", self.resource_path + "tf.json")
             print("--DONE!")
 
-    def calculate_idf(self):
-        self.idf = load("json", self.resource_path + "idf.json")
-        if self.idf.get_status():
-            self.idf = self.idf.get_data()
+    def get_idf(self):
+        idf_list = load("csv", self.resource_path + "idf_list.csv")
+        if idf_list.get_status():
+            idf_list = idf_list.get_data()
         else:
+            idf_list = np.zeros(len(self.feature_list))
             print(":: Calculating Term Frequencies for Dataset...", end="\t")
-            widf = {}
             N = self.dataset.shape[0]
-            for w in self.vocabulary:
+            feature_words = [x['word'] for x in self.feature_list]
+            for w in feature_words:
                 df = 0
                 res = self.dataset[self.dataset['body'].str.contains(w)]
                 df += res.shape[0]
@@ -133,36 +135,109 @@ class FeatureExtractor:
                         words = row['text'] + row['title'] + row['description']
                         if w in words:
                             df += 1
-                widf[w] = np.log((N+1)/df)
-
-            self.idf = pd.DataFrame.from_dict(widf, orient='index').reset_index()
-            self.idf.columns = ['word', 'idf']
+                idf_list[feature_words.index(w)] = np.log((N+1)/df)
+                self.feature_list[feature_words.index(w)]['idf'] = np.log((N+1)/df)
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.idf, "json", self.resource_path + "idf.json")
+            save(idf_list, "csv", self.resource_path + "idf_list.csv")
+            print("--DONE!")
+        return idf_list
+
+    def get_tf(self):
+        tf_matrix = load("csv", self.resource_path + "tf_matrix.csv")
+        if tf_matrix.get_status():
+            tf_matrix = tf_matrix.get_data()
+        else:
+            tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            for idx, row in self.dataset.iterrows():
+                words = row['text'] + row['title'] + row['description']
+                doc_term_freq = FreqDist(words)
+                # print(words)
+                for fw in self.feature_list:
+                    # if doc_term_freq[fw['word']] > 0:
+                        # print(fw['word'], doc_term_freq[fw['word']])
+                    tf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']]
+
+            # print(tf_matrix)
             print("--DONE!")
 
-    def get_tf_in_doc(self):
-        tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
-        # self.tf = load("json", self.resource_path + "tf_in_cat.json")
-        # if self.tf.get_status():
-        #     self.tf = self.tf.get_data()
-        # else:
-        for idx, row in self.dataset.iterrows():
-            words = row['text'] + row['title'] + row['description']
-            doc_term_freq = FreqDist(words)
-            print(words)
-            for fw in self.feature_list:
-                print(fw['word'], doc_term_freq[fw['word']])
-                # tf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']]
+            print(":: Saving Term Frequencies to file...", end="\t")
+            save(tf_matrix, "csv", self.resource_path + "tf_matrix.csv")
+            print("--DONE!")
+        return tf_matrix
 
-        # print(tf_matrix)
-        print("--DONE!")
+    def get_tf_idf(self):
+        tf_idf_matrix = load("csv", self.resource_path + "tf_idf_matrix.csv")
+        if tf_idf_matrix.get_status():
+            tf_idf_matrix = tf_idf_matrix.get_data()
+        else:
+            idf_list = load("csv", self.resource_path + "idf_matrix.csv")
+            if idf_list.get_status():
+                idf_list = idf_list.get_data()
+            else:
+                idf_list = self.get_idf()
 
-        print(":: Saving Term Frequencies to file...", end="\t")
-        save(self.tf, "json", self.resource_path + "tf_in_cat.json")
-        print("--DONE!")
+            tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            for idx, row in self.dataset.iterrows():
+                words = row['text'] + row['title'] + row['description']
+                doc_term_freq = FreqDist(words)
+                for fw in self.feature_list:
+                    tf_idf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']] * idf_list[self.feature_list.index(fw)]
+
+            print("--DONE!")
+
+            print(":: Saving Term Frequencies to file...", end="\t")
+            save(tf_idf_matrix, "csv", self.resource_path + "tf_idf_matrix.csv")
+            print("--DONE!")
+        return tf_idf_matrix
+
+    def get_log_tf_idf(self):
+        tf_idf_matrix = load("csv", self.resource_path + "log_tf_idf_matrix.csv")
+        if tf_idf_matrix.get_status():
+            tf_idf_matrix = tf_idf_matrix.get_data()
+        else:
+            idf_list = load("csv", self.resource_path + "idf_matrix.csv")
+            if idf_list.get_status():
+                idf_list = idf_list.get_data()
+            else:
+                idf_list = self.get_idf()
+
+            tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            for idx, row in self.dataset.iterrows():
+                words = row['text'] + row['title'] + row['description']
+                doc_term_freq = FreqDist(words)
+                for fw in self.feature_list:
+                    tf_idf_matrix[idx][self.feature_list.index(fw)] = np.log(doc_term_freq[fw['word']] + 1) * idf_list[self.feature_list.index(fw)]
+            print("--DONE!")
+
+            print(":: Saving Term Frequencies to file...", end="\t")
+            save(tf_idf_matrix, "csv", self.resource_path + "log_tf_idf_matrix.csv")
+            print("--DONE!")
+        return tf_idf_matrix
+
+    def get_tf_plus_one(self):
+        tf_matrix = load("csv", self.resource_path + "tf_plus_one_matrix.csv")
+        if tf_matrix.get_status():
+            tf_matrix = tf_matrix.get_data()
+        else:
+            tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            for idx, row in self.dataset.iterrows():
+                words = row['text'] + row['title'] + row['description']
+                doc_term_freq = FreqDist(words)
+                # print(words)
+                for fw in self.feature_list:
+                    # if doc_term_freq[fw['word']] > 0:
+                        # print(fw['word'], doc_term_freq[fw['word']])
+                    tf_matrix[idx][self.feature_list.index(fw)] = np.log(doc_term_freq[fw['word']] + 1)
+
+            # print(tf_matrix)
+            print("--DONE!")
+
+            print(":: Saving Term Frequencies to file...", end="\t")
+            save(tf_matrix, "csv", self.resource_path + "tf_plus_one_matrix.csv")
+            print("--DONE!")
+        return tf_matrix
 
     def get_words_in_cat(self, cat_no):
         cat_data = self.dataset.loc[self.dataset['class'] == cat_no]

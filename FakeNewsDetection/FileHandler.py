@@ -1,5 +1,6 @@
 import os.path
 import pandas as pd
+import numpy as np
 
 
 class Exporter:
@@ -20,7 +21,7 @@ class Exporter:
         return True
 
     def to_csv(self):
-        self.data.to_csv(self.path, index=False)
+        np.savetxt(self.path, self.data, delimiter=',')
         return True
 
 
@@ -49,7 +50,7 @@ class Importer:
 
     def from_csv(self):
         print(":: Loading Data From File: \"" + self.path + "\" ...", end="\t ")
-        self.data = pd.read_csv(filepath_or_buffer=self.path)
+        self.data = np.genfromtxt(self.path, delimiter=',')
         print("--DONE!")
 
     def get_status(self):

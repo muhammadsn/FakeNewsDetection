@@ -25,7 +25,11 @@ class FakeDetector:
         a = fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'], "MI")
 
         print(a.get_features())
-        a.get_tf_in_doc()
+        # print(a.get_tf())
+        # print(a.get_tf_plus_one())
+        # print(a.get_idf())
+        # print(a.get_tf_idf())
+        # print(a.get_log_tf_idf())
 
 
 
