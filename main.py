@@ -8,6 +8,9 @@ def main():
 
     settings = {
         "stemmer": "porter",
+        "feature_count": 1000,
+        "feature_extraction_method": "gini_index",
+        "resource_path": "Resources/",
         "real_file_path": "Resources/Real.json",
         "fake_file_path": "Resources/Fake.json",
         "real_dataset_path": "Resources/Dataset/Real.json",
