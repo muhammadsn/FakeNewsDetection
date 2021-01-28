@@ -8,7 +8,7 @@ def main():
 
     settings = {
         "stemmer": "porter",
-        "feature_count": 50,
+        "feature_count": 10,
         "feature_extraction_method": "MI",
         "resource_path": "Resources/",
         "real_file_path": "Resources/Real.json",

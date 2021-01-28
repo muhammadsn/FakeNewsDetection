@@ -23,10 +23,9 @@ class FakeDetector:
         # self.settings['feature_extraction_method']
 
         a = fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'], "MI")
-        b = fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'], "TF")
 
         print(a.get_features())
-        print(b.get_features())
+        a.get_tf_in_doc()
 
 
 

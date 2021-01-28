@@ -143,29 +143,26 @@ class FeatureExtractor:
             save(self.idf, "json", self.resource_path + "idf.json")
             print("--DONE!")
 
-    def calculate_tf_in_cat(self):
-        self.tf = load("json", self.resource_path + "tf_in_cat.json")
-        if self.tf.get_status():
-            self.tf = self.tf.get_data()
-        else:
-            self.calculate_tf()
-            self.tf['tf_real'] = 0
-            self.tf['tf_fake'] = 0
-            print(":: Calculating Term Frequencies for Each Class...", end="\t")
+    def get_tf_in_doc(self):
+        tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+        # self.tf = load("json", self.resource_path + "tf_in_cat.json")
+        # if self.tf.get_status():
+        #     self.tf = self.tf.get_data()
+        # else:
+        for idx, row in self.dataset.iterrows():
+            words = row['text'] + row['title'] + row['description']
+            doc_term_freq = FreqDist(words)
+            print(words)
+            for fw in self.feature_list:
+                print(fw['word'], doc_term_freq[fw['word']])
+                # tf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']]
 
-            real_words = self.get_words_in_cat(1)
-            for w in real_words:
-                self.tf[w]['tf_real'] = real_words.count(w)
+        # print(tf_matrix)
+        print("--DONE!")
 
-            fake_words = self.get_words_in_cat(0)
-            for w in fake_words:
-                self.tf[w]['tf_fake'] = fake_words.count(w)
-
-            print("--DONE!")
-
-            print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.tf, "json", self.resource_path + "tf_in_cat.json")
-            print("--DONE!")
+        print(":: Saving Term Frequencies to file...", end="\t")
+        save(self.tf, "json", self.resource_path + "tf_in_cat.json")
+        print("--DONE!")
 
     def get_words_in_cat(self, cat_no):
         cat_data = self.dataset.loc[self.dataset['class'] == cat_no]
