@@ -20,7 +20,15 @@ class FakeDetector:
         self.load_train_data()
         self.train_dataset = pd.concat([self.real_train_dataset, self.fake_train_dataset])
 
-        fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'])
+        # self.settings['feature_extraction_method']
+
+        a = fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'], "MI")
+        b = fe(self.train_dataset, self.settings["resource_path"], self.settings['feature_count'], "TF")
+
+        print(a.get_features())
+        print(b.get_features())
+
+
 
 
 

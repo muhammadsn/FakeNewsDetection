@@ -8,8 +8,8 @@ def main():
 
     settings = {
         "stemmer": "porter",
-        "feature_count": 1000,
-        "feature_extraction_method": "gini_index",
+        "feature_count": 10,
+        "feature_extraction_method": "MI",
         "resource_path": "Resources/",
         "real_file_path": "Resources/Real.json",
         "fake_file_path": "Resources/Fake.json",

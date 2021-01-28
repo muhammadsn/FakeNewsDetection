@@ -14,11 +14,17 @@ class FeatureExtractor:
     dataset = pd.DataFrame()
     tf = pd.DataFrame()
     idf = pd.DataFrame()
+    feature_scores = pd.DataFrame()
     feature_count = 0
+    feature_list = []
+    resource_path = ""
+    method = ""
 
-    def __init__(self, dataset, resource_path, feature_count):
+    def __init__(self, dataset, resource_path, feature_count, selection_method):
         self.feature_count = feature_count
         self.dataset = dataset
+        self.resource_path = resource_path
+        self.method = selection_method
 
         for idx, row in dataset.iterrows():
             words = row['text'] + row['title'] + row['description']
@@ -31,42 +37,60 @@ class FeatureExtractor:
         for idx, row in df.iterrows():
             self.dataset['body'].at[idx] = " ".join(row['body'])
 
-        self.calculate_tf(resource_path)
-        self.calculate_idf(resource_path)
-        self.mutual_information_scorer(resource_path)
+    def get_features(self):
+        if self.method == "MI":
+            self.mutual_information_scorer()
+            self.feature_scores.columns = ['word', 'score']
+        elif self.method == "TF":
+            self.tf_based_scorer()
+            self.feature_scores.columns = ['word', 'score']
+        f = self.feature_scores.sort_values(by=['score'], ascending=False)
+        f = f.head(self.feature_count)
+        self.feature_list = f.to_dict('records')
+        return self.feature_list
 
-    def mutual_information_scorer(self, resource_path):
-        score_list = []
-        collections = [self.dataset.loc[self.dataset['class'] == 1], self.dataset.loc[self.dataset['class'] == 0]]
-        # cnt = 1
-        for word in self.vocabulary:
-            mi = [0, 0]
-            A = [0, 0]
-            C = [0, 0]
-            for cat in [0, 1]:
-                N = collections[cat].shape[0]
+    def mutual_information_scorer(self):
+        self.feature_scores = load("json", self.resource_path + "mi_scores.json")
+        if self.feature_scores.get_status():
+            self.feature_scores = self.feature_scores.get_data()
+        else:
+            print(":: Calculating Term Frequencies for Vocabulary...", end="\t")
+            score_list = []
+            collections = [self.dataset.loc[self.dataset['class'] == 1], self.dataset.loc[self.dataset['class'] == 0]]
+            cnt = 1
+            for word in self.vocabulary:
+                mi = [0, 0]
+                A = [0, 0]
+                C = [0, 0]
+                for cat in [0, 1]:
+                    N = collections[cat].shape[0]
+                    for idx, row in collections[cat].iterrows():
+                        words = row['text'] + row['title'] + row['description']
+                        if word in words:
+                            A[cat] += words.count(word)
+                        else:
+                            C[cat] += 1
+                B = [A[1], A[0]]
+                mi[0] = np.log((A[0] * N)/((A[0] + C[0]) * (A[0] + B[0])))
+                mi[1] = np.log((A[1] * N)/((A[1] + C[1]) * (A[1] + B[1])))
+                # print(cnt, word, np.max(mi))
+                cnt += 1
+                score_list.append({"word": word, "mi_max": np.max(mi)})
+            df = pd.DataFrame(score_list, columns=["word", "mi_max"])
+            print("--DONE!")
 
-                for idx, row in collections[cat].iterrows():
-                    words = row['text'] + row['title'] + row['description']
-                    if word in words:
-                        A[cat] += words.count(word)
-                    else:
-                        C[cat] += 1
-            B = [A[1], A[0]]
-            mi[0] = np.log((A[0] * N)/((A[0] + C[0]) * (A[0] + B[0])))
-            mi[1] = np.log((A[1] * N)/((A[1] + C[1]) * (A[1] + B[1])))
-            # print(cnt, word, np.max(mi))
-            # cnt += 1
-            score_list.append({"word": word, "mi_max": np.max(mi)})
-        df = pd.DataFrame(score_list, columns=["word", "mi_max"])
-        save(df, "json", resource_path + "mi_scores.json")
+            print(":: Saving MI Scores to file...", end="\t")
+            save(df, "json", self.resource_path + "mi_scores.json")
+            print("--DONE!")
 
+    def tf_based_scorer(self):
+        self.calculate_tf()
+        self.feature_scores = self.tf.sort_values(by=['tf'], ascending=False)
+        f = self.feature_scores.head(self.feature_count)
+        self.feature_list = f['word'].tolist()
 
-
-
-
-    def calculate_tf(self, resource_path):
-        self.tf = load("json", resource_path + "tf.json")
+    def calculate_tf(self):
+        self.tf = load("json", self.resource_path + "tf.json")
         if self.tf.get_status():
             self.tf = self.tf.get_data()
         else:
@@ -81,12 +105,11 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.tf, "json", resource_path + "tf.json")
+            save(self.tf, "json", self.resource_path + "tf.json")
             print("--DONE!")
 
-
-    def calculate_idf(self, resource_path):
-        self.idf = load("json", resource_path + "idf.json")
+    def calculate_idf(self):
+        self.idf = load("json", self.resource_path + "idf.json")
         if self.idf.get_status():
             self.idf = self.idf.get_data()
         else:
@@ -109,15 +132,15 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.idf, "json", resource_path + "idf.json")
+            save(self.idf, "json", self.resource_path + "idf.json")
             print("--DONE!")
 
-    def calculate_tf_in_cat(self, resource_path):
-        self.tf = load("json", resource_path + "tf_in_cat.json")
+    def calculate_tf_in_cat(self):
+        self.tf = load("json", self.resource_path + "tf_in_cat.json")
         if self.tf.get_status():
             self.tf = self.tf.get_data()
         else:
-            self.calculate_tf(resource_path)
+            self.calculate_tf()
             self.tf['tf_real'] = 0
             self.tf['tf_fake'] = 0
             print(":: Calculating Term Frequencies for Each Class...", end="\t")
@@ -133,7 +156,7 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.tf, "json", resource_path + "tf_in_cat.json")
+            save(self.tf, "json", self.resource_path + "tf_in_cat.json")
             print("--DONE!")
 
     def get_words_in_cat(self, cat_no):
