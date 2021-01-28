@@ -2,6 +2,7 @@ from .FileHandler import Importer as load
 from .FileHandler import Exporter as save
 import pandas as pd
 import numpy as np
+from nltk.book import FreqDist
 import sys
 
 pd.set_option("display.max_rows", None, "display.max_columns", None)
@@ -56,27 +57,34 @@ class FeatureExtractor:
         else:
             print(":: Calculating Term Frequencies for Vocabulary...", end="\t")
             score_list = []
-            collections = [self.dataset.loc[self.dataset['class'] == 1], self.dataset.loc[self.dataset['class'] == 0]]
-            cnt = 1
+            real_set = self.dataset.loc[self.dataset['class'] == 1]
+            fake_set = self.dataset.loc[self.dataset['class'] == 0]
+            collections = [real_set, fake_set]
+            collection_words = [[], []]
+
+            for idx, row in collections[0].iterrows():
+                collection_words[0] += row['text'] + row['title'] + row['description']
+
+            for idx, row in collections[1].iterrows():
+                collection_words[1] += row['text'] + row['title'] + row['description']
+
+            term_freq = [FreqDist(collection_words[0]), FreqDist(collection_words[1])]
+            all_term_freq = FreqDist(self.all_words)
+            total_word_count = sum(all_term_freq.values())
+            N = len(collections[0]) + len(collections[1])
+            M = [0, 0]
+            pci = [len(collections[0])/N, len(collections[1])/N]
             for word in self.vocabulary:
-                mi = [0, 0]
-                A = [0, 0]
-                C = [0, 0]
+                pi_w = [0, 0]
+                p_w = all_term_freq[word] / total_word_count
                 for cat in [0, 1]:
-                    N = collections[cat].shape[0]
-                    for idx, row in collections[cat].iterrows():
-                        words = row['text'] + row['title'] + row['description']
-                        if word in words:
-                            A[cat] += words.count(word)
-                        else:
-                            C[cat] += 1
-                B = [A[1], A[0]]
-                mi[0] = np.log((A[0] * N)/((A[0] + C[0]) * (A[0] + B[0])))
-                mi[1] = np.log((A[1] * N)/((A[1] + C[1]) * (A[1] + B[1])))
-                # print(cnt, word, np.max(mi))
-                cnt += 1
-                score_list.append({"word": word, "mi_max": np.max(mi)})
-            df = pd.DataFrame(score_list, columns=["word", "mi_max"])
+                    pi_w[cat] = term_freq[cat][word]/sum(term_freq[cat].values())
+                    print(cat, word, pci[cat], p_w)
+                    M[cat] = np.log(pi_w[cat]/(pci[cat] * p_w))
+                score_list.append({"word": word, "score": np.max(M)})
+
+            df = pd.DataFrame(score_list, columns=["word", "score"])
+            self.feature_scores = df
             print("--DONE!")
 
             print(":: Saving MI Scores to file...", end="\t")
@@ -89,7 +97,7 @@ class FeatureExtractor:
         f = self.feature_scores.head(self.feature_count)
         self.feature_list = f['word'].tolist()
 
-    def calculate_tf(self):
+    def calculate_tf(self):     # TODO: USE FREQDIST...
         self.tf = load("json", self.resource_path + "tf.json")
         if self.tf.get_status():
             self.tf = self.tf.get_data()
