@@ -30,9 +30,11 @@ class FakeDetector:
         # print(a.get_tf())
         # print(a.get_tf_plus_one())
         # print(a.get_idf())
-        Classifier(train.get_tf_idf('train'), train.get_labels(), test.get_tf_idf('test'))
+        classifiers = ["NB", "SV", "LR", "RF"]
+        a = Classifier(train.get_tf_idf('train'), train.get_labels(), test.get_tf_idf('test'), None)
+        for c in classifiers:
+            print(a.get_prediction(c))
         # print(a.get_log_tf_idf())
-
 
 
     def load_train_data(self):
