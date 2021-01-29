@@ -11,10 +11,8 @@ def main():
         "feature_count": 10,
         "feature_extraction_method": "MI",
         "resource_path": "Resources/",
-        "real_file_path": "Resources/Real.json",
-        "fake_file_path": "Resources/Fake.json",
-        "real_dataset_path": "Resources/Dataset/Real.json",
-        "fake_dataset_path": "Resources/Dataset/Fake.json",
+        "train_dataset_path": "Resources/Dataset/Train/",
+        "test_dataset_path": "Resources/Dataset/Test/",
     }
 
     A = fd(settings)

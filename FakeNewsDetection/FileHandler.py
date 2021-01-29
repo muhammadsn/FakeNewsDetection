@@ -41,7 +41,7 @@ class Importer:
                 self.from_csv()
         else:
             self.is_error = True
-            print(":: Data File in \"" + self.path + "\" NOT Found ...\t ABORTING")
+            print(":: Data File in \"" + self.path + "\" NOT Found ...\t --ABORTING")
 
     def from_json(self):
         print(":: Loading Data From File: \"" + self.path + "\" ...", end="\t ")
