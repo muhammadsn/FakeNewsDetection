@@ -13,8 +13,8 @@ class FeatureExtractor:
     all_words = []
     vocabulary = []
     dataset = pd.DataFrame()
-    tf = pd.DataFrame()
-    idf = pd.DataFrame()
+    _tf = pd.DataFrame()
+    _idf = pd.DataFrame()
     feature_scores = pd.DataFrame()
     feature_count = 0
     feature_list = []
@@ -41,6 +41,7 @@ class FeatureExtractor:
         df['class'] = dataset['class']
         for idx, row in df.iterrows():
             self.dataset['body'].at[idx] = " ".join(row['body'])
+
 
     def get_features(self):
         if self.feature_list is None:
@@ -85,7 +86,9 @@ class FeatureExtractor:
                 pi_w = [0, 0]
                 p_w = all_term_freq[word] / total_word_count
                 for cat in [0, 1]:
-                    pi_w[cat] = term_freq[cat][word]/sum(term_freq[cat].values())
+                    ############## WE USED LAPLACE SMOOTHING
+                    pi_w[cat] = (term_freq[cat][word] + 1) / (sum(term_freq[cat].values()) + len(self.vocabulary))
+                    # print(cat, word, pi_w[cat], pci[cat], p_w)
                     M[cat] = np.log(pi_w[cat]/(pci[cat] * p_w))
                 # score_list.append({"word": word, "score": np.max(M)})
                 score_list.append({"word": word, "score": (pci[0] * p_w * M[0]) + (pci[1] * p_w * M[1])})
@@ -100,14 +103,14 @@ class FeatureExtractor:
 
     def tf_based_scorer(self):
         self.calculate_tf()
-        self.feature_scores = self.tf.sort_values(by=['tf'], ascending=False)
+        self.feature_scores = self._tf.sort_values(by=['tf'], ascending=False)
         f = self.feature_scores.head(self.feature_count)
         self.feature_list = f['word'].tolist()
 
     def calculate_tf(self):     # TODO: USE FREQDIST...
-        self.tf = load("json", self.settings['resource_path'] + "tf.json")
-        if self.tf.get_status():
-            self.tf = self.tf.get_data()
+        self._tf = load("json", self.settings['resource_path'] + "tf.json")
+        if self._tf.get_status():
+            self._tf = self._tf.get_data()
         else:
             print(":: Calculating Term Frequencies for Dataset...", end="\t")
             wcd = {}
@@ -115,21 +118,16 @@ class FeatureExtractor:
             for w in self.all_words:
                 if w not in wcd.keys():
                     wcd[w] = self.all_words.count(w)
-            self.tf = pd.DataFrame.from_dict(wcd, orient='index').reset_index()
-            self.tf.columns = ['word', 'tf']
+            self._tf = pd.DataFrame.from_dict(wcd, orient='index').reset_index()
+            self._tf.columns = ['word', 'tf']
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(self.tf, "json", self.settings['resource_path'] + "tf.json")
+            save(self._tf, "json", self.settings['resource_path'] + "tf.json")
             print("--DONE!")
 
-    def get_idf(self, phase):
-        self.phase = phase
-        if phase != "test" and phase != "train":
-            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
-            exit(419)
-
-        idf_list = load("csv", self.settings[phase + '_dataset_path'] + "idf_list.csv")
+    def idf(self):
+        idf_list = load("csv", self.settings[self.phase + '_dataset_path'] + "idf_list.csv")
         if idf_list.get_status():
             idf_list = idf_list.get_data()
         else:
@@ -151,17 +149,12 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Inverse Document Frequencies to file...", end="\t")
-            save(idf_list, "csv", self.settings[phase + '_dataset_path'] + "idf_list.csv")
+            save(idf_list, "csv", self.settings[self.phase + '_dataset_path'] + "idf_list.csv")
             print("--DONE!")
         return idf_list
 
-    def get_tf(self, phase):
-        self.phase = phase
-        if phase != "test" and phase != "train":
-            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
-            exit(419)
-
-        tf_matrix = load("csv", self.settings[phase + '_dataset_path'] + "tf_matrix.csv")
+    def tf(self):
+        tf_matrix = load("csv", self.settings[self.phase + '_dataset_path'] + "tf_matrix.csv")
         if tf_matrix.get_status():
             tf_matrix = tf_matrix.get_data()
         else:
@@ -174,25 +167,20 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(tf_matrix, "csv", self.settings[phase + '_dataset_path'] + "tf_matrix.csv")
+            save(tf_matrix, "csv", self.settings[self.phase + '_dataset_path'] + "tf_matrix.csv")
             print("--DONE!")
         return tf_matrix
 
-    def get_tf_idf(self, phase):
-        self.phase = phase
-        if phase != "test" and phase != "train":
-            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
-            exit(419)
-
-        tf_idf_matrix = load("csv", self.settings[phase + '_dataset_path'] + "tf_idf_matrix.csv")
+    def tf_idf(self):
+        tf_idf_matrix = load("csv", self.settings[self.phase + '_dataset_path'] + "tf_idf_matrix.csv")
         if tf_idf_matrix.get_status():
             tf_idf_matrix = tf_idf_matrix.get_data()
         else:
-            idf_list = load("csv", self.settings[phase + '_dataset_path'] + "idf_list.csv")
+            idf_list = load("csv", self.settings[self.phase + '_dataset_path'] + "idf_list.csv")
             if idf_list.get_status():
                 idf_list = idf_list.get_data()
             else:
-                idf_list = self.get_idf(phase)
+                idf_list = self.idf()
 
             tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
 
@@ -205,25 +193,20 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving TF-IDF Data to file...", end="\t")
-            save(tf_idf_matrix, "csv", self.settings[phase + '_dataset_path'] + "tf_idf_matrix.csv")
+            save(tf_idf_matrix, "csv", self.settings[self.phase + '_dataset_path'] + "tf_idf_matrix.csv")
             print("--DONE!")
         return tf_idf_matrix
 
-    def get_log_tf_idf(self, phase):
-        self.phase = phase
-        if phase != "test" and phase != "train":
-            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
-            exit(419)
-
-        tf_idf_matrix = load("csv", self.settings[phase + '_dataset_path'] + "log_tf_idf_matrix.csv")
+    def log_tf_idf(self):
+        tf_idf_matrix = load("csv", self.settings[self.phase + '_dataset_path'] + "log_tf_idf_matrix.csv")
         if tf_idf_matrix.get_status():
             tf_idf_matrix = tf_idf_matrix.get_data()
         else:
-            idf_list = load("csv", self.settings[phase + '_dataset_path'] + "idf_list.csv")
+            idf_list = load("csv", self.settings[self.phase + '_dataset_path'] + "idf_list.csv")
             if idf_list.get_status():
                 idf_list = idf_list.get_data()
             else:
-                idf_list = self.get_idf(phase)
+                idf_list = self.idf()
 
             tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
             for idx, row in self.dataset.iterrows():
@@ -234,17 +217,12 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Processed Data to file...", end="\t")
-            save(tf_idf_matrix, "csv", self.settings[phase + '_dataset_path'] + "log_tf_idf_matrix.csv")
+            save(tf_idf_matrix, "csv", self.settings[self.phase + '_dataset_path'] + "log_tf_idf_matrix.csv")
             print("--DONE!")
         return tf_idf_matrix
 
-    def get_tf_plus_one(self, phase):
-        self.phase = phase
-        if phase != "test" and phase != "train":
-            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
-            exit(419)
-
-        tf_matrix = load("csv", self.settings[phase + '_dataset_path'] + "tf_plus_one_matrix.csv")
+    def log_tf_1(self,):
+        tf_matrix = load("csv", self.settings[self.phase + '_dataset_path'] + "tf_plus_one_matrix.csv")
         if tf_matrix.get_status():
             tf_matrix = tf_matrix.get_data()
         else:
@@ -257,7 +235,7 @@ class FeatureExtractor:
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
-            save(tf_matrix, "csv", self.settings[phase + '_dataset_path'] + "tf_plus_one_matrix.csv")
+            save(tf_matrix, "csv", self.settings[self.phase + '_dataset_path'] + "tf_plus_one_matrix.csv")
             print("--DONE!")
         return tf_matrix
 
@@ -267,3 +245,16 @@ class FeatureExtractor:
         else:
             print(":: [WARNING] Getting Labels is Only Available in Train Phase")
             return []
+
+    def get_feature_scores(self, method, phase):
+        self.phase = phase
+        if phase != "test" and phase != "train":
+            print(":: [ERROR] Wrong Value for Phase Parameter ['test' or 'train']... --ABORTING")
+            exit(419)
+
+        if method not in ['tf', 'tf_idf', 'log_tf_idf', 'log_tf_1']:
+            print(":: [ERROR] Wrong Value for feature scoring method ['tf' / 'tf_idf' / 'log_tf_idf' / 'log_tf_1']... --ABORTING")
+            exit(419)
+
+        scorer = self.__getattribute__(method)
+        return scorer()

@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.linear_model import LogisticRegression as LR
-from sklearn import naive_bayes as NB
-from sklearn.metrics import accuracy_score,precision_score, recall_score, f1_score
+from sklearn.ensemble import RandomForestClassifier as _RFC
+from sklearn.linear_model import LogisticRegression as _LR
+from sklearn import naive_bayes as _NB
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 
 
@@ -20,10 +20,10 @@ class Classifier:
     prediction = []
     evaluator = None
 
-    def __init__(self, train_sparse, train_labels, test_sparse, test_labels, method=None):
-        self.train_data = sparse.csr_matrix(train_sparse)
+    def __init__(self, train_feature_matrix, train_labels, test_feature_matrix, test_labels, method=None):
+        self.train_data = sparse.csr_matrix(train_feature_matrix)
         self.train_labels = train_labels
-        self.test_data = sparse.csr_matrix(test_sparse)
+        self.test_data = sparse.csr_matrix(test_feature_matrix)
         self.test_labels = test_labels
 
         if method is not None:
@@ -35,12 +35,12 @@ class Classifier:
                 exit(500)
 
     def NB(self):   # Naive Bayes
-        self.model = NB.MultinomialNB()
+        self.model = _NB.MultinomialNB()
         self.model.fit(self.train_data, self.train_labels)
         self.prediction = self.model.predict(self.test_data)
 
     def LR(self):   # logistic regression
-        self.model = LR()
+        self.model = _LR()
         self.model.fit(self.train_data, self.train_labels)
         self.prediction = self.model.predict(self.test_data)
 
@@ -50,7 +50,7 @@ class Classifier:
         self.prediction = self.model.predict(self.test_data)
 
     def RF(self):   # Random Forest
-        self.model = RFC(max_depth=2, random_state=0)
+        self.model = _RFC(max_depth=2, random_state=0)
         self.model.fit(self.train_data, self.train_labels)
         self.prediction = self.model.predict(self.test_data)
 
