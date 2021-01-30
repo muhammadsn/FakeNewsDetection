@@ -34,7 +34,7 @@ class CrossValidation:
         return RF(max_depth=2, random_state=0)
 
     def LR(self):
-        return LR()
+        return LR(max_iter=1500)
 
     def get_validation_scores(self):
         return self.scores

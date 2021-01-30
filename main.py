@@ -13,8 +13,8 @@ def main():
         "classifiers": ["NB", "SV", "LR", "RF"],
         "metrics": ['accuracy', 'precision', 'recall', 'f1'],
         "desired_metric": "f1",
-        "feature_count": 10,
-        "feature_scoring_function": 'tf_idf',                       # POSSIBLE VALUES => tf, tf_idf, log_tf_idf, log_tf_1
+        "feature_count": 500,
+        "feature_scoring_function": 'tf',                       # POSSIBLE VALUES => tf, tf_idf, log_tf_idf, log_tf_1
         "feature_extraction_method": "MI",                      # POSSIBLE VALUES => MI, TF
         "cross_validation_fold_no": 5,
         "resource_path": "Resources/",
