@@ -31,10 +31,10 @@ class CrossValidation:
         return SVC(C=1.0, kernel='linear', degree=3, gamma='auto')
 
     def RF(self):
-        return RF(max_depth=2, random_state=0)
+        return RF(n_jobs=-1)
 
     def LR(self):
-        return LR(max_iter=1500)
+        return LR(max_iter=1500, n_jobs=-1)
 
     def get_validation_scores(self):
         return self.scores
