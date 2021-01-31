@@ -40,7 +40,7 @@ class Classifier:
         self.prediction = self.model.predict(self.test_data)
 
     def LR(self):   # logistic regression
-        self.model = _LR()
+        self.model = _LR(max_iter=1500)
         self.model.fit(self.train_data, self.train_labels)
         self.prediction = self.model.predict(self.test_data)
 
