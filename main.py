@@ -16,7 +16,7 @@ def main():
         "desired_metric": "f1",
         "feature_count": 1500,
         "feature_scoring_function": 'log_tf_idf',                       # POSSIBLE VALUES => tf, tf_idf, log_tf_idf, log_tf_1
-        "feature_extraction_method": "MI",                      # POSSIBLE VALUES => MI, TF
+        "feature_extraction_method": "MI",                              # POSSIBLE VALUES => MI, TF
         "cross_validation_fold_no": 5,
         "resource_path": "Resources/",
         "output_path": "Output/",
@@ -35,7 +35,6 @@ def main():
     # YOU HAVE TO INSTALL "OPENPYXL" FOR THIS...
     # with ExcelWriter('FinalResults.xlsx') as writer:
     #     D.to_excel(writer, index=False)
-
 
 
 
