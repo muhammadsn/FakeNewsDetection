@@ -1,7 +1,8 @@
 # from FakeNewsDetection.FileHandler import Exporter as save
 # from FakeNewsDetection.FileHandler import Importer as load
 # from FakeNewsDetection.FakeDetector import FakeDetector as fd
-from FakeNewsDetection.Plotter import Plotter
+# from FakeNewsDetection.Plotter import Plotter
+from FakeNewsDetection.AuthorScorer import AuthorScorer
 from pandas import ExcelWriter
 
 
@@ -29,8 +30,10 @@ def main():
     # C = A.get_best_classifier(settings['desired_metric'])
     # D = A.predict()
 
-    F = Plotter()
-    F.generate_plots()
+    # F = Plotter()
+    # F.generate_plots()
+
+    x = AuthorScorer()
 
     # YOU HAVE TO INSTALL "OPENPYXL" FOR THIS...
     # with ExcelWriter('FinalResults.xlsx') as writer:
