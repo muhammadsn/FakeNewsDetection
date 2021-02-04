@@ -20,7 +20,7 @@ class AuthorScorer:
             for a in row['authors']:
                 doc_score += self.authors.query('author == "' + a + '"')['score'].tolist()[0]
             if len(row['authors']):
-                self.doc_author_scores['score'].at[idx] = doc_score/len(row['authors'])
+                self.doc_author_scores['author_score'].at[idx] = doc_score/len(row['authors'])
             if row['class'] == 2:
                 if len(row['authors']) != 0 and doc_score/len(row['authors']) == 1:
                     self.doc_author_scores['class'].at[idx] = 3
@@ -30,8 +30,6 @@ class AuthorScorer:
             # print(doc_score, len(row['authors']), self.doc_author_scores.iloc[idx]['score'])
             # print("=====================================")
 
-
-        print(self.doc_author_scores.head(1700))
 
     def load_authors(self):
         self.doc_author_scores = load('json', 'Resources/step4/RealAuthors.json')
@@ -45,7 +43,7 @@ class AuthorScorer:
             self.doc_author_scores = pd.concat([self.doc_author_scores, fake_authors.get_data()], ignore_index=True)
         else:
             exit()
-        self.doc_author_scores['score'] = 0.0
+        self.doc_author_scores['author_score'] = 0.0
 
     def get_author_list(self):
         authors = {}
@@ -67,3 +65,6 @@ class AuthorScorer:
         self.authors.reset_index(inplace=True)
         self.authors.columns = ['author', 'real', 'fake', 'score']
         self.authors['score'] = self.authors['real'] / (self.authors['real'] + self.authors['fake'])
+
+    def get_doc_author_scores(self):
+        return self.doc_author_scores

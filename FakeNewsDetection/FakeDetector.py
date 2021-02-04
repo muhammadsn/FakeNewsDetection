@@ -4,6 +4,7 @@ from sklearn.utils import shuffle
 from .TextProcessor import TextProcessor as tp
 from .FeatureExtractor import FeatureExtractor as fe
 from .CrossValidator import CrossValidation as cv
+from .AuthorScorer import AuthorScorer
 from .Classifier import Classifier as cl
 from .FileHandler import Importer as load
 from .FileHandler import Exporter as save
@@ -26,9 +27,17 @@ class FakeDetector:
     metrics = []
     cross_validator = None
     validation_results = []
+    advanced_mode = False
+    doc_author_scores = pd.DataFrame()
 
     def __init__(self, settings):
         self.settings = settings
+        self.advanced_mode = self.settings['advanced_mode']
+
+        if self.advanced_mode:
+            _AS = AuthorScorer()
+            self.doc_author_scores = _AS.get_doc_author_scores()
+
         self.load_train_data()
         self.load_test_data()
 
@@ -48,6 +57,10 @@ class FakeDetector:
         self.train_dataset = load("json", self.settings["train_dataset_path"] + "Train.json")
         if self.train_dataset.get_status():
             self.train_dataset = self.train_dataset.get_data()
+            if self.advanced_mode:
+                self.train_dataset.drop(['class'], axis=1, inplace=True)
+                self.train_dataset = pd.merge(self.train_dataset, self.doc_author_scores, on=['file'], how='inner')
+
         else:
             self.real_train_dataset = load("json", self.settings["train_dataset_path"] + "Real.json")
             self.fake_train_dataset = load("json", self.settings["train_dataset_path"] + "Fake.json")
@@ -106,6 +119,11 @@ class FakeDetector:
             self.train_dataset = pd.concat([self.real_train_dataset, self.fake_train_dataset])
             # self.train_dataset = self.train_dataset.sample(frac=1).reset_index(drop=True)
             self.train_dataset = shuffle(self.train_dataset)
+
+            if self.advanced_mode:
+                self.train_dataset.drop(['class'], axis=1, inplace=True)
+                self.train_dataset = pd.merge(self.train_dataset, self.doc_author_scores, on=['file'], how='inner')
+
             print(":: Saving Processed Train Set...", end='\t')
             save(self.train_dataset, "json", self.settings["train_dataset_path"] + "Train.json")
             print("--Done!")
