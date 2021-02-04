@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.utils import shuffle
 from .TextProcessor import TextProcessor as tp
 from .FeatureExtractor import FeatureExtractor as fe
+from .AdvancedFeatureExtractor import AdvancedFeatureExtractor as afe
 from .CrossValidator import CrossValidation as cv
 from .AuthorScorer import AuthorScorer
 from .Classifier import Classifier as cl
@@ -43,8 +44,10 @@ class FakeDetector:
 
         self.classifiers = self.settings['classifiers']
         self.metrics = self.settings['metrics']
-
-        self.train_processed = fe(dataset=self.train_dataset, feature_list=None, settings=self.settings)
+        if self.advanced_mode:
+            self.train_processed = afe(dataset=self.train_dataset, feature_list=None, settings=self.settings)
+        else:
+            self.train_processed = fe(dataset=self.train_dataset, feature_list=None, settings=self.settings)
         self.feature_list = self.train_processed.get_features()
 
         self.cross_validator = cv(train=self.train_processed.get_feature_scores(self.settings['feature_scoring_function'], 'train'),

@@ -13,7 +13,7 @@ def main():
     settings = {
         "stemmer": "porter",                                    # POSSIBLE VALUES => porter, english
         "advanced_mode": True,                                  # Activate/Deactivate advanced 4-category classification mode
-        "classifiers": ["NB", "SV", "LR", "RF"],                # ["NB", "SV", "LR", "RF"],
+        "classifiers": ["RF"],                                  # ["NB", "SV", "LR", "RF"],
         "metrics": ['accuracy', 'precision', 'recall', 'f1'],
         "desired_metric": "f1",
         "feature_count": 1500,
@@ -29,14 +29,14 @@ def main():
     A = fd(settings)
     B = A.train()
     # C = A.get_best_classifier(settings['desired_metric'])
-    # D = A.predict()
+    D = A.predict()
 
     # F = Plotter()
     # F.generate_plots()
 
     # YOU HAVE TO INSTALL "OPENPYXL" FOR THIS...
-    # with ExcelWriter('FinalResults.xlsx') as writer:
-    #     D.to_excel(writer, index=False)
+    with ExcelWriter('FinalResults.xlsx') as writer:
+        D.to_excel(writer, index=False)
 
 
 
