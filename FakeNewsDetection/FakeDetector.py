@@ -10,8 +10,8 @@ from .Classifier import Classifier as cl
 from .FileHandler import Importer as load
 from .FileHandler import Exporter as save
 # import warnings
-#
 # warnings.filterwarnings('ignore')
+
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 
 
@@ -29,40 +29,52 @@ class FakeDetector:
     cross_validator = None
     validation_results = []
     advanced_mode = False
-    doc_author_scores = pd.DataFrame()
+    extra_feature_mode = False
+    train_doc_author_scores = pd.DataFrame()
+    test_doc_author_scores = pd.DataFrame()
 
     def __init__(self, settings):
         self.settings = settings
-        self.advanced_mode = self.settings['advanced_mode']
+        self.advanced_mode = self.settings['advanced_mode_step4']
+        self.extra_feature_mode = self.settings['advanced_mode_step2']
 
-        if self.advanced_mode:
-            _AS = AuthorScorer()
-            self.doc_author_scores = _AS.get_doc_author_scores()
+        if self.advanced_mode or self.extra_feature_mode:
+            Train_AS = AuthorScorer('train', advanced=self.advanced_mode)
+            self.train_doc_author_scores = Train_AS.get_doc_author_scores()
+            Test_AS = AuthorScorer('test', advanced=self.advanced_mode)
+            self.test_doc_author_scores = Test_AS.get_doc_author_scores()
 
         self.load_train_data()
         self.load_test_data()
 
         self.classifiers = self.settings['classifiers']
         self.metrics = self.settings['metrics']
+
         if self.advanced_mode:
             self.train_processed = afe(dataset=self.train_dataset, feature_list=None, settings=self.settings)
         else:
             self.train_processed = fe(dataset=self.train_dataset, feature_list=None, settings=self.settings)
-        self.feature_list = self.train_processed.get_features()
+        self.feature_list = self.train_processed.get_text_features()
 
-        self.cross_validator = cv(train=self.train_processed.get_feature_scores(self.settings['feature_scoring_function'], 'train'),
+        train_data = self.train_processed.get_feature_scores(self.settings['feature_scoring_function'], 'train')
+        self.cross_validator = cv(train=train_data,
                                   labels=self.train_processed.get_labels(),
                                   n_fold=self.settings['cross_validation_fold_no'])
 
 
 
     def load_train_data(self):
+        # if self.advanced_mode:
+        #     self.train_dataset = load("json", self.settings["train_dataset_path"] + "Advanced_Train.json")
+        # else:
         self.train_dataset = load("json", self.settings["train_dataset_path"] + "Train.json")
+
         if self.train_dataset.get_status():
             self.train_dataset = self.train_dataset.get_data()
-            if self.advanced_mode:
+
+            if self.advanced_mode or self.extra_feature_mode:
                 self.train_dataset.drop(['class'], axis=1, inplace=True)
-                self.train_dataset = pd.merge(self.train_dataset, self.doc_author_scores, on=['file'], how='inner')
+                self.train_dataset = pd.merge(self.train_dataset, self.train_doc_author_scores, on=['file'], how='inner')
 
         else:
             self.real_train_dataset = load("json", self.settings["train_dataset_path"] + "Real.json")
@@ -123,21 +135,31 @@ class FakeDetector:
             # self.train_dataset = self.train_dataset.sample(frac=1).reset_index(drop=True)
             self.train_dataset = shuffle(self.train_dataset)
 
-            if self.advanced_mode:
+            if self.advanced_mode or self.extra_feature_mode:
                 self.train_dataset.drop(['class'], axis=1, inplace=True)
-                self.train_dataset = pd.merge(self.train_dataset, self.doc_author_scores, on=['file'], how='inner')
+                self.train_dataset = pd.merge(self.train_dataset, self.train_doc_author_scores, on=['file'], how='inner')
 
             print(":: Saving Processed Train Set...", end='\t')
-            save(self.train_dataset, "json", self.settings["train_dataset_path"] + "Train.json")
+            if self.advanced_mode:
+                save(self.train_dataset, "json", self.settings["train_dataset_path"] + "Advanced_Train.json")
+            else:
+                save(self.train_dataset, "json", self.settings["train_dataset_path"] + "Train.json")
             print("--Done!")
             return True
 
     def load_test_data(self):
+        # if self.advanced_mode:
+        #     self.test_dataset = load("json", self.settings["test_dataset_path"] + "Advanced_Test.json")
+        # else:
         self.test_dataset = load("json", self.settings["test_dataset_path"] + "Test.json")
 
         if self.test_dataset.get_status():
             self.test_dataset = self.test_dataset.get_data()
             self.test_dataset['class'] = None
+
+            if self.advanced_mode or self.extra_feature_mode:
+                self.test_dataset.drop(['class'], axis=1, inplace=True)
+                self.test_dataset = pd.merge(self.test_dataset, self.test_doc_author_scores, on=['file'], how='inner')
         else:
             test = load("json", self.settings["resource_path"] + "Test.json")
             if test.get_status():
@@ -154,9 +176,15 @@ class FakeDetector:
                 d = {"file": row["file"], "text": text_tokens.get_words(), "title": title_tokens.get_words(), "description": description_tokens.get_words(), "class": None}
                 tl.append(d)
             self.test_dataset = pd.DataFrame(tl)
+            if self.advanced_mode or self.extra_feature_mode:
+                self.test_dataset.drop(['class'], axis=1, inplace=True)
+                self.test_dataset = pd.merge(self.test_dataset, self.test_doc_author_scores, on=['file'], how='inner')
             print("--Done!")
-            print(":: Saving Processed Real Train Set...", end='\t')
-            save(self.test_dataset, "json", self.settings["test_dataset_path"] + "Test.json")
+            print(":: Saving Processed Real Test Set...", end='\t')
+            if self.advanced_mode:
+                save(self.test_dataset, "json", self.settings["test_dataset_path"] + "Advanced_Test.json")
+            else:
+                save(self.test_dataset, "json", self.settings["test_dataset_path"] + "Test.json")
             print("--Done!")
             return True
 
@@ -171,10 +199,10 @@ class FakeDetector:
                 s.append(self.cross_validator.validate(c, m))
             self.validation_results.append({
                 'classifier': c,
-                'accuracy': np.mean(s[self.metrics.index('accuracy')]),
-                'precision': np.mean(s[self.metrics.index('precision')]),
-                'recall': np.mean(s[self.metrics.index('recall')]),
-                'f1': np.mean(s[self.metrics.index('f1')])
+                'accuracy': np.mean(s[0]),
+                'precision': np.mean(s[1]),
+                'recall': np.mean(s[2]),
+                'f1': np.mean(s[3])
             })
         self.validation_results = pd.DataFrame(self.validation_results)
         save(self.validation_results, 'json', self.settings['output_path'] + self.settings['feature_scoring_function'] + "/result_fn@" + str(self.settings['feature_count']) + ".json")
@@ -190,6 +218,6 @@ class FakeDetector:
                  test_feature_matrix=test.get_feature_scores(method=self.settings['feature_scoring_function'], phase='test'),
                  test_labels=None, method=None)
         df = self.test_dataset
-        df['class'] = res.get_prediction(self.get_best_classifier(self.settings['desired_metric'])[0])
+        df['class'] = res.get_prediction("RF")
         df['file'] = 'newscontent_' + df['file'].astype(str)
         return df[['file', 'class']]

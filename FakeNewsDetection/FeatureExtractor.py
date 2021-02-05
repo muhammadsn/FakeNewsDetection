@@ -43,7 +43,7 @@ class FeatureExtractor:
             self.dataset['body'].at[idx] = " ".join(row['body'])
 
 
-    def get_features(self):
+    def get_text_features(self):
         if self.feature_list is None:
             self.phase = "train"
             if self.method == "MI":
@@ -158,12 +158,21 @@ class FeatureExtractor:
         if tf_matrix.get_status():
             tf_matrix = tf_matrix.get_data()
         else:
-            tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            if self.settings['advanced_mode_step2']:
+                tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)+2])
+            else:
+                tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
             for idx, row in self.dataset.iterrows():
                 words = row['text'] + row['title'] + row['description']
                 doc_term_freq = FreqDist(words)
                 for fw in self.feature_list:
                     tf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']]
+                if self.settings['advanced_mode_step2']:
+                    tf_matrix[idx][-2] = row['author_score']
+                    if len(self.dataset['authors']):
+                        tf_matrix[idx][-1] = 1 - row['author_score']
+                    else:
+                        tf_matrix[idx][-1] = 0
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")
@@ -181,14 +190,22 @@ class FeatureExtractor:
                 idf_list = idf_list.get_data()
             else:
                 idf_list = self.idf()
-
-            tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            if self.settings['advanced_mode_step2']:
+                tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)+2])
+            else:
+                tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
 
             for idx, row in self.dataset.iterrows():
                 words = row['text'] + row['title'] + row['description']
                 doc_term_freq = FreqDist(words)
                 for fw in self.feature_list:
                     tf_idf_matrix[idx][self.feature_list.index(fw)] = doc_term_freq[fw['word']] * idf_list[self.feature_list.index(fw)]
+                if self.settings['advanced_mode_step2']:
+                    tf_idf_matrix[idx][-2] = row['author_score']
+                    if len(self.dataset['authors']):
+                        tf_idf_matrix[idx][-1] = 1 - row['author_score']
+                    else:
+                        tf_idf_matrix[idx][-1] = 0
 
             print("--DONE!")
 
@@ -207,13 +224,21 @@ class FeatureExtractor:
                 idf_list = idf_list.get_data()
             else:
                 idf_list = self.idf()
-
-            tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            if self.settings['advanced_mode_step2']:
+                tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)+2])
+            else:
+                tf_idf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
             for idx, row in self.dataset.iterrows():
                 words = row['text'] + row['title'] + row['description']
                 doc_term_freq = FreqDist(words)
                 for fw in self.feature_list:
                     tf_idf_matrix[idx][self.feature_list.index(fw)] = np.log(doc_term_freq[fw['word']] + 1) * idf_list[self.feature_list.index(fw)]
+                if self.settings['advanced_mode_step2']:
+                    tf_idf_matrix[idx][-2] = row['author_score']
+                    if len(self.dataset['authors']):
+                        tf_idf_matrix[idx][-1] = 1 - row['author_score']
+                    else:
+                        tf_idf_matrix[idx][-1] = 0
             print("--DONE!")
 
             print(":: Saving Processed Data to file...", end="\t")
@@ -226,12 +251,21 @@ class FeatureExtractor:
         if tf_matrix.get_status():
             tf_matrix = tf_matrix.get_data()
         else:
-            tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
+            if self.settings['advanced_mode_step2']:
+                tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)+2])
+            else:
+                tf_matrix = np.zeros([self.dataset.shape[0], len(self.feature_list)])
             for idx, row in self.dataset.iterrows():
                 words = row['text'] + row['title'] + row['description']
                 doc_term_freq = FreqDist(words)
                 for fw in self.feature_list:
                     tf_matrix[idx][self.feature_list.index(fw)] = np.log(doc_term_freq[fw['word']] + 1)
+                if self.settings['advanced_mode_step2']:
+                    tf_matrix[idx][-2] = row['author_score']
+                    if len(self.dataset['authors']):
+                        tf_matrix[idx][-1] = 1 - row['author_score']
+                    else:
+                        tf_matrix[idx][-1] = 0
             print("--DONE!")
 
             print(":: Saving Term Frequencies to file...", end="\t")

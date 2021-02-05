@@ -22,7 +22,7 @@ def _finditem(obj, key):
     return vals
 
 
-path = 'Resources/Fake'
+path = 'Resources/Test'
 
 lf = [f for f in listdir(path) if isfile(join(path, f))]
 dl = []
@@ -37,7 +37,7 @@ for fn in lf:
         authors += _finditem(data, 'author')
         authors = [a.replace('\n', ' ').lower() for a in authors]
         # dct = {'file': fn.split('_')[1], 'text': text, 'title': title, 'description': desc, 'authors': authors}
-        dct = {'file': fn.split('_')[1], 'authors': authors, 'class': 1}
+        dct = {'file': fn.split('_')[1], 'authors': authors, 'class': None}
         print(dct['file'], dct['authors'])
         dl.append(dct)
 
@@ -48,7 +48,7 @@ df = pd.DataFrame(dl)
 #     print(idx, row['file'], row['title'], )
 # print(df.shape)
 
-df.to_json("Resources/step4/FakeAuthors.json", orient="table")
+df.to_json("Resources/step2/test/TestAuthors.json", orient="table")
 #
 # a = pd.read_json("Output/log_tf_1/result_fn@10.json", orient="table")
 # b = pd.read_json("Output/tf_idf/result_fn@10.json", orient="table")

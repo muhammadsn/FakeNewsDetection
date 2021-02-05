@@ -21,7 +21,7 @@ class CrossValidation:
     def validate(self, method, metric):
         classifier = self.__getattribute__(method)
         clf = classifier()
-        self.scores = cross_val_score(estimator=clf, X=self.dataset, y=self.labels, cv=self.k, scoring=metric)
+        self.scores = cross_val_score(estimator=clf, X=self.dataset, y=self.labels, cv=self.k, scoring=metric, n_jobs=-1)
         return self.scores
 
     def NB(self):

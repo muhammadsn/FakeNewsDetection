@@ -43,7 +43,7 @@ class AdvancedFeatureExtractor:
             self.dataset['body'].at[idx] = " ".join(row['body'])
 
 
-    def get_features(self):
+    def get_text_features(self):
         if self.feature_list is None:
             self.phase = "train"
             if self.method == "MI":
